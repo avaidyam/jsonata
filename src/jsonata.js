@@ -1285,18 +1285,23 @@ var jsonata = (function() {
                     // update must be an object
                     var updateType = typeof update;
                     if(updateType !== 'undefined') {
-                        if(updateType !== 'object' || update === null || Array.isArray(update)) {
-                            // throw type error
-                            throw {
-                                code: "T2011",
-                                stack: (new Error()).stack,
-                                position: expr.update.position,
-                                value: update
-                            };
-                        }
-                        // merge the update
-                        for(var prop in update) {
-                            match[prop] = update[prop];
+                        if(updateType === 'object') {
+                            if (update === null || Array.isArray(update)) {
+                                // throw type error
+                                throw {
+                                    code: "T2011",
+                                    stack: (new Error()).stack,
+                                    position: expr.update.position,
+                                    value: update
+                                };
+                            } else {
+                                // merge the update
+                                for(var prop in update) {
+                                    match[prop] = update[prop];
+                                }
+                            }
+                        } else {
+                            match["_value"] = update;
                         }
                     }
 
@@ -1325,6 +1330,8 @@ var jsonata = (function() {
                         }
                     }
                 }
+
+                // collapse any _value key in the result heirarchy
             }
 
             return result;
