@@ -225,6 +225,14 @@
     },
     {
         "function": "#toMillis",
+        "category": "dates with no delimiters",
+        "description": "year month date",
+        "expr": "$toMillis('20200220', '[Y0001][M01][D01]')",
+        "data": {},
+        "result": 1582156800000
+    },
+    {
+        "function": "#toMillis",
         "category": "default unspecified parts",
         "description": "time only defaults to todays date",
         "expr": "$toMillis('13:45', '[H]:[m]') ~> $fromMillis() ~> $substringBefore('T') = $substringBefore($now(), 'T')",

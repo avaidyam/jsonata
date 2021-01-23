@@ -1047,7 +1047,10 @@ const dateTime = (function () {
                     };
                     break;
                 case formats.DECIMAL:
-                    matcher.regex = '[0-9]+';
+                    if (formatSpec.optionalDigits > 0)
+                        console.log(formatSpec)
+                    let numDigits = formatSpec.mandatoryDigits > 0 && formatSpec.optionalDigits == 0 ? formatSpec.mandatoryDigits : -1; 
+                    matcher.regex = '[0-9]' + (numDigits<0 ? '+' : `{${numDigits}}`);
                     if (formatSpec.ordinal) {
                         // ordinals
                         matcher.regex += '(?:th|st|nd|rd)';
@@ -1111,8 +1114,11 @@ const dateTime = (function () {
      * @returns {number} - the parsed timestamp in millis since the epoch
      */
     function parseDateTime(timestamp, picture) {
+        //console.log(picture)
         const formatSpec = analyseDateTimePicture(picture);
+        //console.log(formatSpec.parts)
         const matchSpec = generateRegex(formatSpec);
+        //console.log(matchSpec.parts)
         const fullRegex = '^' + matchSpec.parts.map(part => '(' + part.regex + ')').join('') + '$';
 
         const matcher = new RegExp(fullRegex, 'i'); // TODO can cache this against the picture
