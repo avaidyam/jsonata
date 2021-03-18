@@ -37,6 +37,29 @@ var jsonata = (function() {
 
     // Start of Evaluator code
 
+    var typeEvaluators={
+        'path': evaluatePath,
+        'binary': evaluateBinary,
+        'unary': evaluateUnary,
+        'name': evaluateName,
+        'string': evaluateLiteral,
+        'number': evaluateLiteral,
+        'value': evaluateLiteral,
+        'wildcard': evaluateWildcard,
+        'descendant': evaluateDescendants,
+        'parent': (expr, input, environment)=>environment.lookup(expr.slot.label),
+        'condition': evaluateCondition,
+        'block': evaluateBlock,
+        'bind': evaluateBindExpression,
+        'regex': evaluateRegex,
+        'function': evaluateFunction,
+        'variable': evaluateVariable,
+        'lambda': evaluateLambda,
+        'partial': evaluatePartialApplication,
+        'apply': evaluateApplyExpression,
+        'transform': evaluateTransformExpression,
+    };
+
     var staticFrame = createFrame(null);
 
     /**
@@ -47,71 +70,16 @@ var jsonata = (function() {
      * @returns {*} Evaluated input data
      */
     function* evaluate(expr, input, environment) {
-        var result;
 
         var entryCallback = environment.lookup('__evaluate_entry');
         if(entryCallback) {
             entryCallback(expr, input, environment);
         }
 
-        switch (expr.type) {
-            case 'path':
-                result = yield * evaluatePath(expr, input, environment);
-                break;
-            case 'binary':
-                result = yield * evaluateBinary(expr, input, environment);
-                break;
-            case 'unary':
-                result = yield * evaluateUnary(expr, input, environment);
-                break;
-            case 'name':
-                result = evaluateName(expr, input, environment);
-                break;
-            case 'string':
-            case 'number':
-            case 'value':
-                result = evaluateLiteral(expr, input, environment);
-                break;
-            case 'wildcard':
-                result = evaluateWildcard(expr, input, environment);
-                break;
-            case 'descendant':
-                result = evaluateDescendants(expr, input, environment);
-                break;
-            case 'parent':
-                result = environment.lookup(expr.slot.label);
-                break;
-            case 'condition':
-                result = yield * evaluateCondition(expr, input, environment);
-                break;
-            case 'block':
-                result = yield * evaluateBlock(expr, input, environment);
-                break;
-            case 'bind':
-                result = yield * evaluateBindExpression(expr, input, environment);
-                break;
-            case 'regex':
-                result = evaluateRegex(expr, input, environment);
-                break;
-            case 'function':
-                result = yield * evaluateFunction(expr, input, environment);
-                break;
-            case 'variable':
-                result = evaluateVariable(expr, input, environment);
-                break;
-            case 'lambda':
-                result = evaluateLambda(expr, input, environment);
-                break;
-            case 'partial':
-                result = yield * evaluatePartialApplication(expr, input, environment);
-                break;
-            case 'apply':
-                result = yield * evaluateApplyExpression(expr, input, environment);
-                break;
-            case 'transform':
-                result = evaluateTransformExpression(expr, input, environment);
-                break;
-        }
+        // evaluate using the function that corresponds to the expression type
+        let evaluator = typeEvaluators[expr.type];
+        var result = evaluator(expr, input, environment);
+        if (isIterable(result)) result = yield* result;
 
         if(environment.async &&
             (typeof result === 'undefined' || result === null || typeof result.then !== 'function')) {
@@ -820,7 +788,6 @@ var jsonata = (function() {
      * @returns {boolean} - true if lhs is a member of rhs
      */
     function evaluateIncludesExpression(lhs, rhs) {
-        var result = false;
 
         if (typeof lhs === 'undefined' || typeof rhs === 'undefined') {
             // if either side is undefined, the result is false
@@ -831,14 +798,7 @@ var jsonata = (function() {
             rhs = [rhs];
         }
 
-        for(var i = 0; i < rhs.length; i++) {
-            if(rhs[i] === lhs) {
-                result = true;
-                break;
-            }
-        }
-
-        return result;
+        return rhs.includes(lhs);
     }
 
     /**
